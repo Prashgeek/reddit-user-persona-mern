@@ -18,9 +18,15 @@ export const generatePersona = async (req, res) => {
     if (!username) throw new Error('Reddit username could not be extracted');
 
     const data = await scrapeRedditUser(username);
-    if (!data || data.length === 0) throw new Error('No Reddit activity found.');
+    if (!data || !data.posts?.length || !data.comments?.length) {
+      throw new Error('No Reddit activity found.');
+    }
 
-    const persona = await generateUserPersona(data);
+    const persona = await generateUserPersona({
+      username: data.username,
+      posts: data.posts,
+      comments: data.comments,
+    });
 
     // 🔧 Use correct absolute path to /personas folder
     const dirPath = path.join(__dirname, '../personas');
@@ -31,7 +37,7 @@ export const generatePersona = async (req, res) => {
 
     res.json({ persona: persona.output, citations: persona.citations });
   } catch (err) {
-    console.error("🔴 Backend Error:", err);
+    console.error('🔴 Backend Error:', err);
     res.status(500).json({ message: err.message || 'Internal Server Error' });
   }
 };
