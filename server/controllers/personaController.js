@@ -12,14 +12,20 @@ export const generatePersona = async (req, res) => {
   const { redditUrl } = req.body;
 
   try {
-    if (!redditUrl.includes('/user/')) throw new Error('Invalid Reddit profile URL');
+    if (!redditUrl || !redditUrl.includes('/user/')) {
+      throw new Error('Invalid Reddit profile URL.');
+    }
 
     const username = redditUrl.split('/user/')[1]?.replace('/', '');
-    if (!username) throw new Error('Reddit username could not be extracted');
+    if (!username) {
+      throw new Error('Reddit username could not be extracted.');
+    }
 
     const data = await scrapeRedditUser(username);
-    if (!data || !data.posts?.length || !data.comments?.length) {
-      throw new Error('No Reddit activity found.');
+
+    // ✅ Correct check: must have either posts or comments
+    if ((!data.posts || data.posts.length === 0) && (!data.comments || data.comments.length === 0)) {
+      throw new Error('No Reddit activity found for this user.');
     }
 
     const persona = await generateUserPersona({
@@ -28,9 +34,11 @@ export const generatePersona = async (req, res) => {
       comments: data.comments,
     });
 
-    // 🔧 Use correct absolute path to /personas folder
+    // 🔧 Create /personas folder if it doesn’t exist
     const dirPath = path.join(__dirname, '../personas');
-    if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
 
     const filePath = path.join(dirPath, `${username}_persona.txt`);
     fs.writeFileSync(filePath, persona.output);
