@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-export const scrapeRedditUser = async (username) => {
+export const scrapeRedditUser = async (rawUsername) => {
+  // ✅ Clean up username (handle trailing slashes)
+  const username = rawUsername.replace(/^\/+|\/+$/g, '').replace('user/', '');
+
   const commentsURL = `https://www.reddit.com/user/${username}/comments.json?limit=25`;
   const postsURL = `https://www.reddit.com/user/${username}/submitted.json?limit=25`;
 
@@ -18,14 +21,18 @@ export const scrapeRedditUser = async (username) => {
     const comments = commentsRes.data?.data?.children?.map(item => item.data) || [];
     const posts = postsRes.data?.data?.children?.map(item => item.data) || [];
 
-    // 🛡️ Optional: Check if no content at all
     if (comments.length === 0 && posts.length === 0) {
       throw new Error(`No public Reddit activity found for user "${username}".`);
     }
 
     return { username, comments, posts };
   } catch (err) {
-    console.error(`🔴 Failed to scrape Reddit user "${username}":`, err.response?.status || err.message);
+    const status = err.response?.status;
+    const errorMsg = status
+      ? `Reddit API error (status: ${status}) for user "${username}"`
+      : err.message;
+
+    console.error(`🔴 Scraping failed: ${errorMsg}`);
     throw new Error('Failed to scrape Reddit user content. Make sure the username is valid and public.');
   }
 };
