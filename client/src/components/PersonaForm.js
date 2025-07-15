@@ -9,7 +9,8 @@ function PersonaForm() {
     e.preventDefault();
     setOutput(' Generating your AI persona...');
     try {
-      const res = await axios.post('http://localhost:5000/api/persona/generate', {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/persona/generate`, {
+
         redditUrl: url,
       });
       setOutput(res.data.persona);
